@@ -1,0 +1,5 @@
+# Local virtual environment
+env/
+# Data directory
+data/**
+!data/README.md
