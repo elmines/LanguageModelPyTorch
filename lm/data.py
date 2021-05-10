@@ -18,13 +18,14 @@ def get_tokenized_samples(f) -> Generator[List[str],None,None]:
 
 
 class ReviewDataset(torch.utils.data.IterableDataset):
-    def __init__(self, review_files : List[str], vocab : List[str]):
+    def __init__(self, review_files : List[str], vocab : List[str], repeat=False):
         self.unk             = "<UNK>"
         self.i2w             = dict(enumerate(vocab))
         self.unk_i           = len(self.i2w)
         self.i2w[self.unk_i] = self.unk
-        self.w2i = {w:i for (i,w) in self.i2w.items()}
-        self._review_files = review_files
+        self.w2i             = {w:i for (i,w) in self.i2w.items()}
+        self._review_files   = review_files
+        self.repeat          = repeat
     def get_index(self, w : str):
         return self.w2i.get(w, self.unk_i)
     def __iter__(self):
@@ -35,5 +36,11 @@ class ReviewDataset(torch.utils.data.IterableDataset):
                     reviews = map(lambda rev: rev.split(), reviews)
                     for rev in reviews:
                         for i in range(2, len(rev)):
-                            yield torch.tensor( [self.get_index(rev[i-2]), self.get_index(rev[i-1]), self.get_index(rev[i])] )
-        return gen()
+                            yield torch.tensor(self.get_index(rev[i-2])), torch.tensor(self.get_index(rev[i-1])), torch.tensor(self.get_index(rev[i]))
+        if self.repeat:
+            def rep_gen():
+                while True:
+                    yield from gen()
+            return rep_gen()
+        else:
+            return gen()
